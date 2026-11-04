@@ -1,7 +1,44 @@
 import json
+import re
 import httpx
 from fastapi import HTTPException
+from pydantic import ValidationError
 from .models import Settings, Course
+
+
+def course_validation_details(error: ValidationError, language: str) -> str:
+    rules = {
+        'Invalid experiment range': ('实验参数或目标范围不合法', 'Invalid experiment or target range'),
+        'Points must cover the range and have strictly increasing x': ('实验数据点必须覆盖参数范围，且横坐标严格递增', 'Points must cover the range and have strictly increasing x'),
+        'Step exceeds range': ('实验步长超过参数范围', 'Step exceeds the experiment range'),
+        'Experiment target is unreachable with this step': ('滑块步长无法到达实验目标范围', 'Experiment target is unreachable with this step'),
+        'Decision needs unique options and a correct answer': ('决策选项 ID 必须唯一，且至少有一个正确答案', 'Decision needs unique options and a correct answer'),
+        'Correct order must contain every item exactly once': ('排序答案必须恰好包含每个条目一次', 'Correct order must contain every item exactly once'),
+        'Scene IDs must be unique': ('任务 ID 不能重复', 'Scene IDs must be unique'),
+        'Use at least two interaction types': ('学习路线至少需要两种互动形式', 'Use at least two interaction types'),
+    }
+    field_errors = {
+        'json_invalid': ('模型未返回完整有效的 JSON，可能存在截断或额外说明文字', 'Model did not return complete, valid JSON; output may be truncated or contain extra prose'),
+        'missing': ('缺少必填字段', 'Missing required field'),
+        'extra_forbidden': ('包含模板不支持的额外字段', 'Unexpected field'),
+        'union_tag_invalid': ('互动类型不支持，只允许 experiment、decision 或 sort', 'Unsupported interaction type; use experiment, decision or sort'),
+        'union_tag_not_found': ('缺少互动类型 type', 'Missing interaction type'),
+        'too_short': ('条目数量不足', 'Too few items'),
+        'too_long': ('条目数量超过限制', 'Too many items'),
+        'string_too_short': ('文字内容过短或为空', 'Text is too short or empty'),
+        'string_too_long': ('文字内容超过长度限制', 'Text exceeds the length limit'),
+    }
+    locale = 0 if language == 'zh' else 1
+    messages = []
+    for issue in error.errors(include_input=False, include_context=False, include_url=False)[:3]:
+        # Extra-field names and validation input can contain generated or source text.
+        location = issue['loc'][:-1] if issue['type'] == 'extra_forbidden' else issue['loc']
+        path = '.'.join(str(part) for part in location) or 'course'
+        reason = rules.get(issue['msg'].removeprefix('Value error, ')) or field_errors.get(issue['type'])
+        if reason is None:
+            reason = ('字段类型或数值约束不匹配', 'Invalid field type or numeric constraint')
+        messages.append(f"{path}: {reason[locale]} [{issue['type']}]")
+    return '; '.join(messages)
 
 
 async def complete(settings: Settings, messages: list[dict], structured: bool = False) -> str:
@@ -45,11 +82,13 @@ No HTML, markdown, code, or external URLs.'''
         {'role': 'user', 'content': json.dumps({'source_kind': request.source_kind, 'material': request.source}, ensure_ascii=False)},
     ], structured=True)
     try:
-        if content.strip().startswith('```'):
-            content = content.strip().split('\n', 1)[1].rsplit('```', 1)[0]
+        fenced = re.fullmatch(r'```(?:json)?\s*([\s\S]*?)\s*```', content.strip(), re.IGNORECASE)
+        if fenced:
+            content = fenced.group(1)
         course = Course.model_validate_json(content)
-    except ValueError:
-        raise HTTPException(502, 'AI 生成的场景未通过校验，请重试或更换模型 / Generated scenes failed validation. Retry or choose another model.')
+    except ValidationError as error:
+        summary = 'AI 生成的场景未通过校验' if request.language == 'zh' else 'Generated scenes failed validation'
+        raise HTTPException(502, summary + ': ' + course_validation_details(error, request.language))
     normalized = ' '.join(request.source.split())
     for scene in course.scenes:
         if request.source_kind == 'topic' or not scene.quote.strip() or ' '.join(scene.quote.split()) not in normalized:

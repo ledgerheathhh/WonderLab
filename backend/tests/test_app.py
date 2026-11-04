@@ -92,6 +92,66 @@ def test_bad_ai_output_is_not_saved(client, monkeypatch):
     assert client.get('/api/projects').json() == []
 
 
+@pytest.mark.parametrize('content', ['{"title":', '```', '```json\n{"title":'])
+def test_invalid_generated_json_has_specific_error(client, monkeypatch, content):
+    async def invalid(*args, **kwargs):
+        return content
+    monkeypatch.setattr(ai, 'complete', invalid)
+    response = generate(client)
+    assert response.status_code == 502
+    assert 'valid JSON' in response.json()['detail']
+    assert client.get('/api/projects').json() == []
+
+
+@pytest.mark.parametrize('kind,expected', [
+    ('missing', 'scenes.0.decision.hint: Missing required field'),
+    ('order', 'scenes.1.sort: Correct order must contain every item exactly once'),
+    ('duplicate', 'course: Scene IDs must be unique'),
+    ('tag', 'scenes.0: Unsupported interaction type'),
+    ('extra', 'scenes.0.decision: Unexpected field'),
+])
+def test_generated_course_reports_rule_without_model_content(client, monkeypatch, kind, expected):
+    course = json.loads(json.dumps(COURSE))
+    private = 'private-source-and-key-must-not-appear'
+    if kind == 'missing':
+        del course['scenes'][0]['hint']
+    elif kind == 'order':
+        course['scenes'][1]['correct_order'] = ['a', 'a', 'c']
+    elif kind == 'duplicate':
+        course['scenes'][1]['id'] = 'choose'
+    elif kind == 'tag':
+        course['scenes'][0]['type'] = private
+    else:
+        course['scenes'][0][private] = private
+    async def invalid(*args, **kwargs):
+        return json.dumps(course)
+    monkeypatch.setattr(ai, 'complete', invalid)
+    response = generate(client)
+    assert response.status_code == 502
+    assert expected in response.json()['detail']
+    assert private not in response.text
+    assert 'secret-test-key' not in response.text
+    assert client.get('/api/projects').json() == []
+
+
+def test_markdown_fenced_course_can_generate(client, monkeypatch):
+    async def fenced(*args, **kwargs):
+        return '```json\n' + json.dumps(COURSE) + '\n```'
+    monkeypatch.setattr(ai, 'complete', fenced)
+    assert generate(client).status_code == 200
+
+
+def test_topic_validation_error_uses_requested_language(client, monkeypatch):
+    async def invalid(*args, **kwargs):
+        return '{"title":"KV cache"}'
+    monkeypatch.setattr(ai, 'complete', invalid)
+    response = generate(client, source='kv-cache', source_kind='topic', language='zh',
+                        settings={**SETTINGS, 'model': 'openrouter/free'})
+    assert response.status_code == 502
+    assert 'summary: 缺少必填字段' in response.json()['detail']
+    assert 'secret-test-key' not in response.text
+
+
 def test_tutor_context_and_missing_scene(client, mock_ai):
     project = generate(client).json()
     payload = {'settings': SETTINGS, 'project': project, 'scene_id': 'choose', 'question': 'Why?', 'language': 'en'}

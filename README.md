@@ -33,6 +33,8 @@ Requires Python 3.11+ and Node.js 22.12+. Run `./start.sh`, then open http://127
 
 Add a compatible API base URL (without `/chat/completions`), model ID, and API key in settings. Test, apply, and create a course. Switch the UI language before generation to choose the course and tutor language. Existing course content is not automatically translated.
 
+JSON 模式不等于课程结构校验：模型返回的 JSON 还必须满足字段、排序答案、实验参数等规则。生成失败时，页面会显示最多三个具体问题，例如 `scenes.1.sort: 排序答案必须恰好包含每个条目一次`；任务索引从 0 开始。报错不包含模型原始回答或资料内容。`openrouter/free` 会在可用免费模型间路由，实际模型可能变化，详见 [OpenRouter 免费路由说明](https://openrouter.ai/docs/guides/routing/routers/free-router)。
+
 Key 默认仅在当前页面内存保存，刷新页面后清除。勾选“在此设备记住 API Key”并点击“应用设置”后，Key 会以明文保存在当前浏览器 localStorage，使用同一浏览器和相同访问地址（包括端口）时，刷新或重启后自动填入；仅在自己的设备上开启。取消勾选并应用会移除已保存的 Key，当前页面仍可使用；“清除已保存的 Key”会立即移除浏览器保存的 Key 以及当前页面中的 Key。模型地址和名称同样保存在浏览器 localStorage；资料、路线、作答、完成状态保存在 `backend/wonderlab.sqlite3`。后端不保存 API Key，不记录请求正文。AI 生成和辅导会将当前资料发往用户配置的 API 服务。无云托管、账户系统或遥测。请勿把本地服务器暴露到公网。
 
 By default, your key stays in page memory and clears on reload. Enable “Remember API key on this device” and apply settings to save it in plain text in this browser’s localStorage. Disabling Remember and applying removes the saved key; “Clear saved key” also clears the active key immediately. Use the same browser and site address (including port). Enable this option only on your own device. Material, courses, answers, and progress use local SQLite. AI generation and tutoring send material to your configured provider. No hosted service, account, or telemetry is included.
