@@ -35,28 +35,14 @@ import TutorPanel from "./components/TutorPanel.vue";
 import { language, t, switchLanguage } from "./i18n";
 import { example, exampleCards } from "./examples";
 import { request, saveProject } from "./api";
+import { loadSettings, storeSettings } from "./settings";
 import type { Project, Scene, Settings } from "./types";
 const view = ref<"home" | "library" | "path" | "workspace">("home"),
   projects = ref<Project[]>([]),
   project = ref<Project | null>(null);
-const settings = ref<Settings>({
-  base_url: "https://api.openai.com/v1",
-  model: "",
-  api_key: "",
-  json_mode: true,
-});
-try {
-  const saved = JSON.parse(
-    localStorage.getItem("wonderlab-settings") || "null",
-  );
-  if (saved)
-    settings.value = {
-      base_url: String(saved.base_url || settings.value.base_url),
-      model: String(saved.model || ""),
-      json_mode: saved.json_mode !== false,
-      api_key: "",
-    };
-} catch {}
+const initialSettings = loadSettings(localStorage);
+const settings = ref<Settings>(initialSettings.settings);
+const rememberKey = ref(initialSettings.rememberKey);
 const settingsOpen = ref(false),
   sourceOpen = ref(false),
   sidebarOpen = ref(false),
@@ -113,16 +99,10 @@ watch(
     window.scrollTo({ top: 0 });
   },
 );
-function applySettings(value: Settings) {
+function applySettings(value: Settings, remember: boolean) {
+  storeSettings(localStorage, value, remember);
   settings.value = value;
-  localStorage.setItem(
-    "wonderlab-settings",
-    JSON.stringify({
-      base_url: value.base_url,
-      model: value.model,
-      json_mode: value.json_mode,
-    }),
-  );
+  rememberKey.value = remember;
   settingsOpen.value = false;
 }
 async function load() {
@@ -1052,8 +1032,10 @@ async function remove() {
     <SettingsModal
       v-if="settingsOpen"
       :settings="settings"
+      :remember-key="rememberKey"
       @close="settingsOpen = false"
       @save="applySettings"
+      @clear="applySettings({ ...settings, api_key: '' }, false)"
     />
     <div
       v-if="sourceOpen && project"

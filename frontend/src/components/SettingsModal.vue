@@ -10,9 +10,10 @@ import {
 import type { Settings } from "../types";
 import { request } from "../api";
 import { t } from "../i18n";
-const props = defineProps<{ settings: Settings }>();
-const emit = defineEmits<{ close: []; save: [Settings] }>();
+const props = defineProps<{ settings: Settings; rememberKey: boolean }>();
+const emit = defineEmits<{ close: []; save: [Settings, boolean]; clear: [] }>();
 const draft = ref({ ...props.settings });
+const remember = ref(props.rememberKey);
 const testing = ref(false),
   message = ref(""),
   success = ref(false);
@@ -73,7 +74,7 @@ function preset(url: string) {
           )
         }}
       </p>
-      <form @submit.prevent="emit('save', { ...draft })">
+      <form @submit.prevent="emit('save', { ...draft }, remember)">
         <div class="presets">
           <button type="button" @click="preset('https://api.openai.com/v1')">
             OpenAI</button
@@ -108,6 +109,24 @@ function preset(url: string) {
             required
             placeholder="sk-…"
         /></label>
+        <label class="check-label">
+          <input v-model="remember" type="checkbox" />
+          {{ t("在此设备记住 API Key", "Remember API key on this device") }}
+        </label>
+        <p class="small muted">
+          {{ t(
+            "开启后，Key 将以明文保存在当前浏览器中，刷新或重启后自动填入。仅在自己的设备上开启。",
+            "When enabled, your key is stored in plain text in this browser and restored on reload or restart. Use only on your own device.",
+          ) }}
+        </p>
+        <button
+          v-if="rememberKey"
+          type="button"
+          class="text-button"
+          @click="emit('clear')"
+        >
+          {{ t("清除已保存的 Key", "Clear saved key") }}
+        </button>
         <label class="check-label"
           ><input v-model="draft.json_mode" type="checkbox" />{{
             t("启用 JSON 模式（推荐）", "Enable JSON mode (recommended)")
@@ -124,8 +143,8 @@ function preset(url: string) {
         <div class="privacy-note">
           <KeyRound :size="16" /><span>{{
             t(
-              "Key 仅保存在当前页面内存中，刷新后需重新填写。资料会发送至你配置的 API 服务。",
-              "Your key stays in this page’s memory and clears on reload. Learning material is sent to your configured API provider.",
+              "未勾选“记住”时，Key 仅保留在当前页面内存中。修改记住选项后需点击“应用设置”生效。资料会发送至你配置的 API 服务。",
+              "Without Remember enabled, your key stays in page memory only. Click Apply settings to save changes. Material is sent to your configured API provider.",
             )
           }}</span>
         </div>

@@ -33,9 +33,9 @@ Requires Python 3.11+ and Node.js 22.12+. Run `./start.sh`, then open http://127
 
 Add a compatible API base URL (without `/chat/completions`), model ID, and API key in settings. Test, apply, and create a course. Switch the UI language before generation to choose the course and tutor language. Existing course content is not automatically translated.
 
-Key 仅在当前页面内存保存，刷新页面后清除。模型地址和名称保存在浏览器 localStorage；资料、路线、作答、完成状态保存在 `backend/wonderlab.sqlite3`。后端不保存 API Key，不记录请求正文。AI 生成和辅导会将当前资料发往用户配置的 API 服务。无云托管、账户系统或遥测。请勿把本地服务器暴露到公网。
+Key 默认仅在当前页面内存保存，刷新页面后清除。勾选“在此设备记住 API Key”并点击“应用设置”后，Key 会以明文保存在当前浏览器 localStorage，使用同一浏览器和相同访问地址（包括端口）时，刷新或重启后自动填入；仅在自己的设备上开启。取消勾选并应用会移除已保存的 Key，当前页面仍可使用；“清除已保存的 Key”会立即移除浏览器保存的 Key 以及当前页面中的 Key。模型地址和名称同样保存在浏览器 localStorage；资料、路线、作答、完成状态保存在 `backend/wonderlab.sqlite3`。后端不保存 API Key，不记录请求正文。AI 生成和辅导会将当前资料发往用户配置的 API 服务。无云托管、账户系统或遥测。请勿把本地服务器暴露到公网。
 
-Your key stays in page memory and clears on reload. Endpoint preferences use browser localStorage. Material, courses, answers, and progress use local SQLite. AI generation and tutoring send material to your configured provider. No hosted service, account, or telemetry is included.
+By default, your key stays in page memory and clears on reload. Enable “Remember API key on this device” and apply settings to save it in plain text in this browser’s localStorage. Disabling Remember and applying removes the saved key; “Clear saved key” also clears the active key immediately. Use the same browser and site address (including port). Enable this option only on your own device. Material, courses, answers, and progress use local SQLite. AI generation and tutoring send material to your configured provider. No hosted service, account, or telemetry is included.
 
 ## MVP 范围
 
