@@ -1,0 +1,377 @@
+{
+  "$defs": {
+    "Decision": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "hint": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Hint",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "title": "Quote",
+          "type": "string"
+        },
+        "type": {
+          "const": "decision",
+          "title": "Type",
+          "type": "string"
+        },
+        "context": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Context",
+          "type": "string"
+        },
+        "options": {
+          "items": {
+            "$ref": "#/$defs/Option"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Options",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "objective",
+        "explanation",
+        "hint",
+        "quote",
+        "type",
+        "context",
+        "options"
+      ],
+      "title": "Decision",
+      "type": "object"
+    },
+    "Experiment": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "hint": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Hint",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "title": "Quote",
+          "type": "string"
+        },
+        "type": {
+          "const": "experiment",
+          "title": "Type",
+          "type": "string"
+        },
+        "variable": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Variable",
+          "type": "string"
+        },
+        "unit": {
+          "maxLength": 40,
+          "title": "Unit",
+          "type": "string"
+        },
+        "result_label": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Result Label",
+          "type": "string"
+        },
+        "result_unit": {
+          "maxLength": 40,
+          "title": "Result Unit",
+          "type": "string"
+        },
+        "min": {
+          "title": "Min",
+          "type": "number"
+        },
+        "max": {
+          "title": "Max",
+          "type": "number"
+        },
+        "step": {
+          "exclusiveMinimum": 0,
+          "title": "Step",
+          "type": "number"
+        },
+        "points": {
+          "items": {
+            "$ref": "#/$defs/Point"
+          },
+          "maxItems": 30,
+          "minItems": 2,
+          "title": "Points",
+          "type": "array"
+        },
+        "target_min": {
+          "title": "Target Min",
+          "type": "number"
+        },
+        "target_max": {
+          "title": "Target Max",
+          "type": "number"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "objective",
+        "explanation",
+        "hint",
+        "quote",
+        "type",
+        "variable",
+        "unit",
+        "result_label",
+        "result_unit",
+        "min",
+        "max",
+        "step",
+        "points",
+        "target_min",
+        "target_max"
+      ],
+      "title": "Experiment",
+      "type": "object"
+    },
+    "Item": {
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": ["id", "text"],
+      "title": "Item",
+      "type": "object"
+    },
+    "Option": {
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "correct": {
+          "title": "Correct",
+          "type": "boolean"
+        },
+        "feedback": {
+          "minLength": 1,
+          "title": "Feedback",
+          "type": "string"
+        }
+      },
+      "required": ["id", "text", "correct", "feedback"],
+      "title": "Option",
+      "type": "object"
+    },
+    "Point": {
+      "properties": {
+        "x": {
+          "title": "X",
+          "type": "number"
+        },
+        "y": {
+          "title": "Y",
+          "type": "number"
+        }
+      },
+      "required": ["x", "y"],
+      "title": "Point",
+      "type": "object"
+    },
+    "SortScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "hint": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Hint",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "title": "Quote",
+          "type": "string"
+        },
+        "type": {
+          "const": "sort",
+          "title": "Type",
+          "type": "string"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Item"
+          },
+          "maxItems": 7,
+          "minItems": 3,
+          "title": "Items",
+          "type": "array"
+        },
+        "correct_order": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Correct Order",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "objective",
+        "explanation",
+        "hint",
+        "quote",
+        "type",
+        "items",
+        "correct_order"
+      ],
+      "title": "SortScene",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "title": {
+      "maxLength": 160,
+      "minLength": 1,
+      "title": "Title",
+      "type": "string"
+    },
+    "summary": {
+      "maxLength": 2000,
+      "minLength": 1,
+      "title": "Summary",
+      "type": "string"
+    },
+    "subject": {
+      "maxLength": 80,
+      "minLength": 1,
+      "title": "Subject",
+      "type": "string"
+    },
+    "scenes": {
+      "items": {
+        "discriminator": {
+          "mapping": {
+            "decision": "#/$defs/Decision",
+            "experiment": "#/$defs/Experiment",
+            "sort": "#/$defs/SortScene"
+          },
+          "propertyName": "type"
+        },
+        "oneOf": [
+          {
+            "$ref": "#/$defs/Experiment"
+          },
+          {
+            "$ref": "#/$defs/Decision"
+          },
+          {
+            "$ref": "#/$defs/SortScene"
+          }
+        ]
+      },
+      "maxItems": 6,
+      "minItems": 2,
+      "title": "Scenes",
+      "type": "array"
+    }
+  },
+  "required": ["title", "summary", "subject", "scenes"],
+  "title": "Course",
+  "type": "object"
+}
