@@ -29,7 +29,7 @@ Requires Python 3.11+ and Node.js 22.12+. Run `./start.sh`, then open http://127
 1. 打开左下角“模型与 API 设置 / Model & API settings”。
 2. 填写 Base URL（如 `https://api.openai.com/v1`）、模型 ID 和自己的 API Key。Base URL 不包含 `/chat/completions`，模型 ID 以服务商文档为准。
 3. 测试连接并应用。接口需要支持非流式 `POST /chat/completions`；默认启用 `response_format: {"type":"json_object"}`。不支持 JSON 模式的服务可关闭该选项，后端仍会校验场景结构。
-4. 粘贴至少 10 字符的资料、上传 PDF，或输入主题。生成语言跟随界面语言。已有课程保留生成时的语言，不随界面切换自动翻译。
+4. 粘贴至少 10 字符的资料、上传 PDF，或在“输入主题”中填写任意非空主题（如“复利”“熵”）。资料长度不计首尾空白，输入不足时页面会显示要求及当前字符数。生成语言跟随界面语言。已有课程保留生成时的语言，不随界面切换自动翻译。
 
 Add a compatible API base URL (without `/chat/completions`), model ID, and API key in settings. Test, apply, and create a course. Switch the UI language before generation to choose the course and tutor language. Existing course content is not automatically translated.
 

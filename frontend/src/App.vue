@@ -72,6 +72,9 @@ const inputMode = ref<"text" | "pdf" | "topic">("text"),
   deleteTarget = ref<Project | null>(null);
 const uploadInput = ref<HTMLInputElement>(),
   importAbort = ref<AbortController | null>(null);
+const sourceLength = computed(() => material.value.trim().length);
+const sourceMinimum = computed(() => (inputMode.value === "topic" ? 1 : 10));
+const sourceTooShort = computed(() => sourceLength.value < sourceMinimum.value);
 const scene = computed(
   () =>
     project.value?.course.scenes.find(
@@ -214,7 +217,7 @@ function mode(next: typeof inputMode.value) {
   error.value = "";
 }
 async function generateCourse() {
-  if (!material.value.trim() || generating.value) return;
+  if (sourceTooShort.value || generating.value || parsing.value) return;
   if (!settings.value.api_key || !settings.value.model) {
     settingsOpen.value = true;
     return;
@@ -552,6 +555,7 @@ async function remove() {
               v-model="material"
               maxlength="60000"
               :disabled="generating"
+              :aria-describedby="sourceTooShort ? 'source-hint' : undefined"
               :placeholder="
                 inputMode === 'topic'
                   ? t(
@@ -575,6 +579,24 @@ async function remove() {
               ($event.target as HTMLInputElement).value = '';
             "
           />
+          <p
+            v-if="sourceTooShort"
+            id="source-hint"
+            class="input-hint"
+            role="status"
+          >
+            {{
+              inputMode === "topic"
+                ? t(
+                    '请输入想学习的主题，例如“复利”或“熵”。',
+                    'Enter a topic to learn, such as “interest” or “entropy”.',
+                  )
+                : t(
+                    `资料至少需要 ${sourceMinimum} 个字符，当前 ${sourceLength} 个（不计首尾空白）。简短主题请使用“输入主题”。`,
+                    `Material needs at least ${sourceMinimum} characters; currently ${sourceLength} (excluding leading and trailing whitespace). For a short topic, choose “Explore a topic”.`,
+                  )
+            }}
+          </p>
           <div class="input-footer">
             <span
               ><span class="tiny-spark">✦</span
@@ -599,7 +621,7 @@ async function remove() {
               {{ t("停止等待", "Stop waiting") }}</button
             ><button
               class="button primary generate-button"
-              :disabled="material.trim().length < 10 || generating || parsing"
+              :disabled="sourceTooShort || generating || parsing"
               @click="generateCourse"
             >
               <LoaderCircle

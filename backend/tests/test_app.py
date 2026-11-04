@@ -65,6 +65,25 @@ def test_topic_has_no_source_quotes(client, mock_ai):
     assert all(s['quote'] == '' for s in project['course']['scenes'])
 
 
+@pytest.mark.parametrize('source', ['复利', '熵'])
+def test_short_topic_can_generate(client, mock_ai, source):
+    response = generate(client, source_kind='topic', source=source)
+    assert response.status_code == 200
+    assert response.json()['source'] == source
+
+
+@pytest.mark.parametrize('kind,source', [('topic', '   '), ('text', '复利'), ('text', '   123456789   '), ('pdf', 'short')])
+def test_insufficient_source_is_rejected(client, mock_ai, kind, source):
+    assert generate(client, source_kind=kind, source=source).status_code == 422
+    assert client.get('/api/projects').json() == []
+
+
+def test_source_length_uses_trimmed_content(client, mock_ai):
+    response = generate(client, source='   1234567890   ')
+    assert response.status_code == 200
+    assert response.json()['source'] == '1234567890'
+
+
 def test_bad_ai_output_is_not_saved(client, monkeypatch):
     async def invalid(*args, **kwargs):
         return '{"title":"broken"}'

@@ -138,11 +138,19 @@ class Project(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    source: str = Field(min_length=10, max_length=60000)
+    source: str = Field(min_length=1, max_length=60000)
     source_name: str = Field(min_length=1, max_length=200)
     source_kind: Literal['text', 'pdf', 'topic']
     language: Literal['zh', 'en'] = 'zh'
     settings: Settings
+
+    @model_validator(mode='after')
+    def valid_source(self):
+        self.source = self.source.strip()
+        minimum = 1 if self.source_kind == 'topic' else 10
+        if len(self.source) < minimum:
+            raise ValueError(f'Source needs at least {minimum} characters')
+        return self
 
 
 class ChatRequest(BaseModel):

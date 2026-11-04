@@ -555,6 +555,11 @@ p {
 .text-input-area textarea::placeholder {
   color: #b1b7ab;
 }
+.input-hint {
+  padding: 10px 25px 0;
+  font-size: 11px;
+  color: var(--muted);
+}
 .input-footer {
   padding: 15px 23px 19px;
   display: flex;
