@@ -38,6 +38,35 @@
           "title": "Quote",
           "type": "string"
         },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": [
+                "guided",
+                "practice",
+                "transfer"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "introduction": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Introduction",
+          "type": "string"
+        },
+        "worked_example": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Worked Example",
+          "type": "string"
+        },
         "type": {
           "const": "decision",
           "title": "Type",
@@ -109,6 +138,35 @@
         "quote": {
           "maxLength": 2000,
           "title": "Quote",
+          "type": "string"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": [
+                "guided",
+                "practice",
+                "transfer"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "introduction": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Introduction",
+          "type": "string"
+        },
+        "worked_example": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Worked Example",
           "type": "string"
         },
         "type": {
@@ -204,7 +262,10 @@
           "type": "string"
         }
       },
-      "required": ["id", "text"],
+      "required": [
+        "id",
+        "text"
+      ],
       "title": "Item",
       "type": "object"
     },
@@ -230,7 +291,12 @@
           "type": "string"
         }
       },
-      "required": ["id", "text", "correct", "feedback"],
+      "required": [
+        "id",
+        "text",
+        "correct",
+        "feedback"
+      ],
       "title": "Option",
       "type": "object"
     },
@@ -245,8 +311,120 @@
           "type": "number"
         }
       },
-      "required": ["x", "y"],
+      "required": [
+        "x",
+        "y"
+      ],
       "title": "Point",
+      "type": "object"
+    },
+    "RecallScene": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "maxLength": 80,
+          "minLength": 1,
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        },
+        "objective": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "hint": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Hint",
+          "type": "string"
+        },
+        "quote": {
+          "maxLength": 2000,
+          "title": "Quote",
+          "type": "string"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": [
+                "guided",
+                "practice",
+                "transfer"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "introduction": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Introduction",
+          "type": "string"
+        },
+        "worked_example": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Worked Example",
+          "type": "string"
+        },
+        "type": {
+          "const": "recall",
+          "title": "Type",
+          "type": "string"
+        },
+        "question": {
+          "maxLength": 2000,
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "reference_answer": {
+          "maxLength": 4000,
+          "minLength": 1,
+          "title": "Reference Answer",
+          "type": "string"
+        },
+        "checkpoints": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 5,
+          "minItems": 2,
+          "title": "Checkpoints",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "objective",
+        "explanation",
+        "hint",
+        "quote",
+        "type",
+        "question",
+        "reference_answer",
+        "checkpoints"
+      ],
+      "title": "RecallScene",
       "type": "object"
     },
     "SortScene": {
@@ -285,6 +463,35 @@
         "quote": {
           "maxLength": 2000,
           "title": "Quote",
+          "type": "string"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "enum": [
+                "guided",
+                "practice",
+                "transfer"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "introduction": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Introduction",
+          "type": "string"
+        },
+        "worked_example": {
+          "default": "",
+          "maxLength": 4000,
+          "title": "Worked Example",
           "type": "string"
         },
         "type": {
@@ -343,12 +550,21 @@
       "title": "Subject",
       "type": "string"
     },
+    "learning_goals": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 4,
+      "title": "Learning Goals",
+      "type": "array"
+    },
     "scenes": {
       "items": {
         "discriminator": {
           "mapping": {
             "decision": "#/$defs/Decision",
             "experiment": "#/$defs/Experiment",
+            "recall": "#/$defs/RecallScene",
             "sort": "#/$defs/SortScene"
           },
           "propertyName": "type"
@@ -362,6 +578,9 @@
           },
           {
             "$ref": "#/$defs/SortScene"
+          },
+          {
+            "$ref": "#/$defs/RecallScene"
           }
         ]
       },
@@ -371,7 +590,12 @@
       "type": "array"
     }
   },
-  "required": ["title", "summary", "subject", "scenes"],
+  "required": [
+    "title",
+    "summary",
+    "subject",
+    "scenes"
+  ],
   "title": "Course",
   "type": "object"
 }

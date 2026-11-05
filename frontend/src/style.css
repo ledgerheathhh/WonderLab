@@ -1423,6 +1423,63 @@ p {
   color: #6e845c;
   margin-top: 6px;
 }
+.teaching-card,
+.recall-board,
+.learning-goals {
+  padding: 17px;
+  border: 1px solid #e4eadd;
+  border-radius: 8px;
+  margin-bottom: 21px;
+  color: #667d55;
+  font-size: 13px;
+  line-height: 1.9;
+}
+.teaching-card summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.teaching-card p,
+.reference-answer p,
+.feedback p,
+.explanation-details > p {
+  white-space: pre-wrap;
+}
+.teaching-card p,
+.reference-answer p {
+  margin: 12px 0;
+}
+.recall-board > label {
+  display: block;
+  font-weight: 600;
+}
+.recall-board textarea {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #c3d5ad;
+  border-radius: 6px;
+  background: #fafcf8;
+  color: #536b43;
+  font: inherit;
+  resize: vertical;
+}
+.reference-answer {
+  margin-top: 17px;
+  padding-top: 17px;
+  border-top: 1px solid #e4eadd;
+}
+.checkpoint {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-top: 10px;
+}
+.learning-goals {
+  margin-top: 20px;
+}
+.learning-goals ul {
+  padding-left: 20px;
+}
 .experiment-board {
   padding: 19px;
   border: 1px solid #e4eadd;
@@ -1740,10 +1797,13 @@ p {
   border: 1px solid #e2e7d6;
   border-radius: 7px;
   background: #fbfcf6;
-  display: flex;
-  align-items: start;
-  gap: 8px;
   color: #a0ac86;
+}
+.hint-card summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
 }
 .hint-card strong {
   font-size: 10px;

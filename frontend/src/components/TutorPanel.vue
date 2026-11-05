@@ -103,13 +103,13 @@ async function ask(text = question.value) {
           }}
         </p>
       </div>
-      <div class="hint-card">
-        <Lightbulb :size="18" />
-        <div>
-          <strong>{{ t("一个小提示", "A little hint") }}</strong>
-          <p>{{ scene.hint }}</p>
-        </div>
-      </div>
+      <details :key="scene.id" class="hint-card">
+        <summary>
+          <Lightbulb :size="18" />
+          <strong>{{ t("需要时再看提示", "Show a hint when needed") }}</strong>
+        </summary>
+        <p>{{ scene.hint }}</p>
+      </details>
       <div
         v-for="(message, i) in messages"
         :key="i"

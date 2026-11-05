@@ -5,7 +5,7 @@ import httpx
 from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 from backend import main, ai
-from backend.models import Course, Settings
+from backend.models import Course, GeneratedCourse, Settings
 
 SOURCE = 'Water follows a cycle. First water evaporates, then it condenses into clouds, and finally precipitation returns it to the ground.'
 COURSE = {
@@ -22,6 +22,20 @@ COURSE = {
          'correct_order': ['a', 'b', 'c']}
     ]
 }
+LEGACY_COURSE = json.loads(json.dumps(COURSE))
+COURSE['learning_goals'] = ['Explain how cooling changes water vapor.', 'Apply the water cycle to a new setting.']
+COURSE['scenes'][0].update(
+    phase='guided',
+    introduction='Water moves between the ground and atmosphere. Heating and cooling help explain its changes.',
+    worked_example='On a cool lid above warm water, vapor cools and becomes droplets. The droplets are liquid, not newly created water.')
+COURSE['scenes'][1]['phase'] = 'practice'
+COURSE['scenes'].append({
+    'id': 'transfer', 'type': 'recall', 'phase': 'transfer', 'title': 'Explain a new case',
+    'objective': 'Apply condensation to a new setting.', 'question': 'Why might droplets form outside a cold glass on a humid day?',
+    'reference_answer': 'Water vapor in the surrounding air cools near the glass and condenses into liquid droplets.',
+    'checkpoints': ['Identify vapor in the surrounding air.', 'Connect cooling to condensation.'],
+    'explanation': 'Droplets can come from surrounding vapor, rather than from inside the glass. Cooling causes condensation.',
+    'hint': 'Consider where the water was before the droplets appeared.', 'quote': ''})
 SETTINGS = {'base_url': 'https://provider.example/v1', 'model': 'example-model', 'api_key': 'secret-test-key', 'json_mode': True}
 
 
@@ -194,6 +208,85 @@ def test_unreachable_experiment_rejected():
         Course.model_validate({**COURSE, 'scenes': [scene, COURSE['scenes'][0]]})
     scene.update(target_min=6, target_max=7)
     assert Course.model_validate({**COURSE, 'scenes': [scene, COURSE['scenes'][0]]})
+
+
+def test_legacy_course_can_still_be_saved(client):
+    project = {'id': 'legacy', 'source': SOURCE, 'source_name': 'Old notes', 'source_kind': 'text',
+               'course': LEGACY_COURSE, 'progress': {}, 'updated_at': ''}
+    assert client.put('/api/projects/legacy', json=project).status_code == 200
+    assert len(client.get('/api/projects').json()[0]['course']['scenes']) == 2
+
+
+def test_lesson_does_not_need_an_interaction_type_quota():
+    decisions = [dict(LEGACY_COURSE['scenes'][0], id=f'decision-{i}') for i in range(2)]
+    assert Course.model_validate({**LEGACY_COURSE, 'scenes': decisions})
+    course = json.loads(json.dumps(COURSE))
+    course['scenes'][1] = dict(course['scenes'][0], id='practice', phase='practice',
+                              introduction='', worked_example='')
+    assert GeneratedCourse.model_validate(course)
+
+
+@pytest.mark.parametrize('problem,expected', [
+    ('phases', 'Use guided, practice and transfer phases in order'),
+    ('example', 'Guided activities need an introduction and worked example'),
+    ('transfer', 'End with a recall activity for independent transfer'),
+    ('ambiguous-choice', 'Decision needs exactly one correct answer'),
+    ('blank-checkpoint', 'Recall checkpoints must not be blank'),
+    ('always-correct', 'Experiment must include a reachable incorrect answer'),
+    ('flat-result', 'Experiment must show a changing result'),
+])
+def test_poor_generated_design_is_not_saved(client, monkeypatch, problem, expected):
+    course = json.loads(json.dumps(COURSE))
+    if problem == 'phases':
+        course['scenes'][1]['phase'] = 'guided'
+    elif problem == 'example':
+        course['scenes'][0]['worked_example'] = ' '
+    elif problem == 'transfer':
+        course['scenes'][-1] = dict(course['scenes'][0], id='last', phase='transfer')
+    elif problem == 'ambiguous-choice':
+        course['scenes'][0]['options'][1]['correct'] = True
+    elif problem == 'blank-checkpoint':
+        course['scenes'][-1]['checkpoints'][0] = ' '
+    else:
+        course['scenes'][1] = {
+            'id': 'exp', 'type': 'experiment', 'phase': 'practice', 'title': 'Predict an outcome',
+            'objective': 'Reach an output of 10.', 'explanation': 'Observe how the output changes.',
+            'hint': 'Compare the values.', 'quote': '', 'variable': 'Input', 'unit': '',
+            'result_label': 'Output', 'result_unit': '', 'min': 0, 'max': 10, 'step': 3,
+            'points': [{'x': 0, 'y': 10}, {'x': 10, 'y': 10 if problem == 'flat-result' else 20}],
+            'target_min': 6 if problem == 'flat-result' else 0, 'target_max': 9}
+    async def poor_design(*args, **kwargs):
+        return json.dumps(course)
+    monkeypatch.setattr(ai, 'complete', poor_design)
+    response = generate(client)
+    assert response.status_code == 502
+    assert expected in response.json()['detail']
+    assert client.get('/api/projects').json() == []
+
+
+def test_new_design_and_recall_answer_persist(client, mock_ai):
+    project = generate(client).json()
+    assert project['course']['learning_goals'] == COURSE['learning_goals']
+    assert project['course']['scenes'][0]['worked_example']
+    assert project['course']['scenes'][-1]['type'] == 'recall'
+    project['progress']['answers']['transfer'] = 'The surrounding vapor cools and condenses.'
+    assert client.put('/api/projects/' + project['id'], json=project).status_code == 200
+    assert client.get('/api/projects').json()[0]['progress']['answers']['transfer'].startswith('The surrounding vapor')
+    assert GeneratedCourse.model_validate(project['course'])
+
+
+@pytest.mark.parametrize('kind', ['topic', 'text'])
+def test_generation_distinguishes_topic_from_source(client, monkeypatch, kind):
+    messages = []
+    async def capture(settings, sent, structured=False):
+        messages.extend(sent)
+        return json.dumps(COURSE)
+    monkeypatch.setattr(ai, 'complete', capture)
+    assert generate(client, source_kind=kind).status_code == 200
+    prompt = messages[0]['content']
+    assert ('The input is a TOPIC NAME' in prompt) == (kind == 'topic')
+    assert ('The input is SOURCE MATERIAL' in prompt) == (kind == 'text')
+    assert json.loads(messages[1]['content'])['source_kind'] == kind
 
 
 def test_pdf_errors(client):

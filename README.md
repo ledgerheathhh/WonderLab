@@ -42,9 +42,9 @@ By default, your key stays in page memory and clears on reload. Enable “Rememb
 ## MVP 范围
 
 - 文本、主题、可提取文字的 PDF（≤12 MB、150 页、60,000 字符）；扫描件先自行 OCR。
-- AI 生成 2–6 个任务，至少两种互动形式；路线可调整顺序。
-- 实验仅使用数值点的线性插值，不执行 AI 代码。每个实验有明确参数目标和模型适用范围。
-- 决策逐选项解释；排序支持拖拽和上下移动；规则反馈无需再次调用 AI。
+- AI 生成 2–4 个学习目标、3–6 个任务，按讲解与示例、应用练习、独立迁移递进；路线可调整顺序，旧课程仍可使用。不强制凑互动类型。
+- 实验仅使用数值点的线性插值，不执行 AI 代码。新实验面向可观察的结果目标，参数答案不直接展示，说明模型适用范围。
+- 决策逐选项解释；排序支持拖拽和上下移动；新增回忆与迁移：先作答，再对照参考思路逐项自查。自查记录不代表 AI 评分或已证明掌握，规则反馈无需再次调用 AI。
 - 提示、AI 追问、知识解释、原文查看；摘录经空白规范化后必须能匹配输入资料，否则不标记为原文依据。主题生成没有原文引用。引用存在不代表已自动验证事实正确性。
 - 自动保存当前任务、历史作答和完成状态；本地学习库可继续、重玩或删除。
 - 真实模型效果与 API 兼容性需要使用自己的 Key 验证；内置示例是固定内容，明确区别于 AI 生成。
@@ -69,6 +69,8 @@ npm test
 ```
 
 代码位置：`frontend/src/components/ScenePlayer.vue` 为互动模板；`backend/models.py` 为权威 JSON Schema；`backend/ai.py` 为模型调用与教学提示；`backend/main.py` 为本地 API、PDF 和 SQLite。导出的场景结构见 `docs/course.schema.json`。
+
+教学依据、生成契约与验证边界见 [互动课程生成设计](docs/learning-design.md)。结构校验会拦截部分无效任务，不会自动证明事实正确或教学有效。
 
 API 协议参考：[DeepSeek JSON Output](https://api-docs.deepseek.com/guides/json_mode/)。文件接收与解析参考：[FastAPI UploadFile](https://fastapi.tiangolo.com/tutorial/request-files/)、[pypdf](https://github.com/py-pdf/pypdf)。
 

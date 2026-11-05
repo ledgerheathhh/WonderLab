@@ -11,6 +11,9 @@ export interface BaseScene {
   explanation: string;
   hint: string;
   quote: string;
+  phase?: "guided" | "practice" | "transfer" | null;
+  introduction?: string;
+  worked_example?: string;
 }
 export interface Experiment extends BaseScene {
   type: "experiment";
@@ -35,11 +38,18 @@ export interface SortScene extends BaseScene {
   items: { id: string; text: string }[];
   correct_order: string[];
 }
-export type Scene = Experiment | Decision | SortScene;
+export interface Recall extends BaseScene {
+  type: "recall";
+  question: string;
+  reference_answer: string;
+  checkpoints: string[];
+}
+export type Scene = Experiment | Decision | SortScene | Recall;
 export interface Course {
   title: string;
   summary: string;
   subject: string;
+  learning_goals?: string[];
   scenes: Scene[];
 }
 export interface Progress {
@@ -61,6 +71,7 @@ export const sceneNames = {
   experiment: "交互实验",
   decision: "情境决策",
   sort: "排序挑战",
+  recall: "回忆与迁移",
 };
 export function interpolate(points: Experiment["points"], x: number): number {
   if (x <= points[0]!.x) return points[0]!.y;

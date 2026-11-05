@@ -81,9 +81,18 @@ const nameOf = (type: Scene["type"]) =>
     experiment: t("交互实验", "Experiment"),
     decision: t("情境决策", "Decision"),
     sort: t("排序挑战", "Ordering"),
+    recall: t("回忆与迁移", "Recall & transfer"),
   })[type];
 const iconOf = (type: Scene["type"]) =>
-  ({ experiment: FlaskConical, decision: Route, sort: Code2 })[type];
+  ({ experiment: FlaskConical, decision: Route, sort: Code2, recall: BookOpen })[type];
+const phaseName = (phase: Scene["phase"]) =>
+  phase
+    ? ({
+        guided: t("理解与示例", "Guided learning"),
+        practice: t("应用练习", "Practice"),
+        transfer: t("独立迁移", "Transfer"),
+      })[phase]
+    : "";
 const label = (pair: string[]) => pair[language.value === "zh" ? 0 : 1];
 watch(
   language,
@@ -248,6 +257,11 @@ function answer(value: string | number | string[], correct: boolean) {
   progress.answers[id] = value;
   progress.attempts[id] = (progress.attempts[id] || 0) + 1;
   if (correct && !progress.completed.includes(id)) progress.completed.push(id);
+  persist();
+}
+function saveDraft(value: string) {
+  if (!project.value || !scene.value) return;
+  project.value.progress.answers[scene.value.id] = value;
   persist();
 }
 function next() {
@@ -842,6 +856,17 @@ async function remove() {
           >
           <h1>{{ project.course.title }}</h1>
           <p>{{ project.course.summary }}</p>
+          <div
+            v-if="project.course.learning_goals?.length"
+            class="learning-goals"
+          >
+            <strong>{{ t("学完你将能够", "After this lesson you can") }}</strong>
+            <ul>
+              <li v-for="goal in project.course.learning_goals" :key="goal">
+                {{ goal }}
+              </li>
+            </ul>
+          </div>
           <div class="path-metadata">
             <span
               ><Route :size="16" />{{ project.course.scenes.length }}
@@ -904,7 +929,7 @@ async function remove() {
             <div class="path-card-content">
               <span class="scene-type"
                 ><component :is="iconOf(s.type)" :size="14" />{{
-                  nameOf(s.type)
+                  phaseName(s.phase) || nameOf(s.type)
                 }}</span
               >
               <h3>{{ s.title }}</h3>
@@ -980,7 +1005,7 @@ async function remove() {
             </div>
             <div class="activity-heading">
               <span class="eyebrow"
-                >{{ nameOf(scene.type) }} /
+                >{{ phaseName(scene.phase) || nameOf(scene.type) }} /
                 {{
                   String(project.course.scenes.indexOf(scene) + 1).padStart(
                     2,
@@ -995,9 +1020,13 @@ async function remove() {
               :scene="scene"
               :progress="project.progress"
               @answer="answer"
+              @draft="saveDraft"
               @next="next"
             />
-            <details class="explanation-details">
+            <details
+              v-if="scene.type !== 'recall' || project.progress.completed.includes(scene.id)"
+              class="explanation-details"
+            >
               <summary>
                 <BookOpen :size="17" />{{
                   t("知识解释与原文依据", "Explanation & source evidence")

@@ -15,6 +15,7 @@ import { t } from "../i18n";
 const props = defineProps<{ scene: Scene; progress: Progress }>();
 const emit = defineEmits<{
   answer: [value: string | number | string[], correct: boolean];
+  draft: [value: string];
   next: [];
 }>();
 const previous = props.progress.answers[props.scene.id];
@@ -26,6 +27,9 @@ const value = ref(
     : 0,
 );
 const selected = ref(typeof previous === "string" ? previous : "");
+const response = ref(typeof previous === "string" ? previous : ""),
+  reviewed = ref(false),
+  checkpoints = ref<string[]>([]);
 const order = ref(
   props.scene.type === "sort"
     ? Array.isArray(previous)
@@ -89,8 +93,8 @@ function submit() {
     feedback.value = correct.value
       ? s.explanation
       : t(
-          "再看一眼目标范围，继续调整参数。",
-          "Check the target range and adjust your parameter.",
+          "对照目标结果，观察参数变化如何影响结果，再试一次。",
+          "Compare the result with the goal. Observe how changing the parameter affects it, then try again.",
         );
   } else if (s.type === "decision") {
     const option = s.options.find((o) => o.id === selected.value);
@@ -98,6 +102,18 @@ function submit() {
     correct.value = option.correct;
     answer = selected.value;
     feedback.value = option.feedback;
+  } else if (s.type === "recall") {
+    if (!reviewed.value || !response.value.trim()) return;
+    correct.value = s.checkpoints.every((point) =>
+      checkpoints.value.includes(point),
+    );
+    answer = response.value.trim();
+    feedback.value = correct.value
+      ? s.explanation
+      : t(
+          "还有要点未覆盖。对照参考思路补充你的解释，再重新自查。",
+          "Some points still need work. Revise your explanation using the reference, then check again.",
+        );
   } else {
     correct.value = order.value.every((id, i) => id === s.correct_order[i]);
     answer = [...order.value];
@@ -115,6 +131,9 @@ function reset() {
   checked.value = false;
   feedback.value = "";
   selected.value = "";
+  response.value = "";
+  reviewed.value = false;
+  checkpoints.value = [];
   if (props.scene.type === "experiment") value.value = props.scene.min;
   if (props.scene.type === "sort")
     order.value = shuffled(props.scene.items.map((x) => x.id));
@@ -128,6 +147,18 @@ const fmt = (n: number) =>
       <span class="eyebrow">{{ t("本次探索目标", "YOUR MISSION") }}</span>
       <p>{{ scene.objective }}</p>
     </div>
+    <details
+      v-if="scene.introduction || scene.worked_example"
+      class="teaching-card"
+      :open="scene.phase === 'guided'"
+    >
+      <summary>{{ t("理解概念与推理示例", "Concept & worked example") }}</summary>
+      <p v-if="scene.introduction">{{ scene.introduction }}</p>
+      <template v-if="scene.worked_example">
+        <strong>{{ t("跟着推理一次", "Follow the reasoning") }}</strong>
+        <p>{{ scene.worked_example }}</p>
+      </template>
+    </details>
     <template v-if="scene.type === 'experiment'">
       <div class="experiment-board">
         <div class="result-row">
@@ -235,6 +266,49 @@ const fmt = (n: number) =>
         </button>
       </div>
     </template>
+    <template v-else-if="scene.type === 'recall'">
+      <div class="recall-board">
+        <label for="recall-response">{{ scene.question }}</label>
+        <p class="small muted">
+          {{
+            t(
+              "先用自己的话作答，再对照参考思路。这是自我检查，不是 AI 评分。",
+              "Answer in your own words before viewing the reference. This is self-assessment, not AI grading.",
+            )
+          }}
+        </p>
+        <textarea
+          id="recall-response"
+          v-model="response"
+          rows="5"
+          maxlength="6000"
+          @input="
+            reviewed = false;
+            checked = false;
+            checkpoints = [];
+          "
+          @change="emit('draft', response)"
+        />
+        <div v-if="reviewed" class="reference-answer">
+          <strong>{{ t("参考思路", "Reference reasoning") }}</strong>
+          <p>{{ scene.reference_answer }}</p>
+          <strong>{{ t("我的解释已经覆盖", "My explanation covers") }}</strong>
+          <label
+            v-for="point in scene.checkpoints"
+            :key="point"
+            class="checkpoint"
+          >
+            <input
+              v-model="checkpoints"
+              type="checkbox"
+              :value="point"
+              @change="checked = false"
+            />
+            <span>{{ point }}</span>
+          </label>
+        </div>
+      </div>
+    </template>
     <template v-else>
       <p class="small muted">
         {{
@@ -284,7 +358,9 @@ const fmt = (n: number) =>
     <div v-if="checked" class="feedback" :class="{ correct }" role="status">
       <span class="feedback-title"
         ><Sparkles :size="18" />{{
-          correct
+          scene.type === 'recall' && correct
+            ? t("自查完成", "Self-check complete")
+            : correct
             ? t("你发现了！", "You got it!")
             : t("再探索一下", "Keep exploring")
         }}</span
@@ -303,7 +379,17 @@ const fmt = (n: number) =>
       <button class="button secondary" @click="reset">
         <RotateCcw :size="16" />{{ t("重置", "Reset") }}</button
       ><button
-        v-if="checked && correct"
+        v-if="scene.type === 'recall' && !reviewed"
+        class="button primary"
+        :disabled="!response.trim()"
+        @click="
+          reviewed = true;
+          emit('draft', response);
+        "
+      >
+        {{ t("对照参考思路", "Compare with reference") }}<ArrowRight :size="16" />
+      </button><button
+        v-else-if="checked && correct"
         class="button primary"
         @click="emit('next')"
       >
@@ -314,7 +400,11 @@ const fmt = (n: number) =>
         :disabled="scene.type === 'decision' && !selected"
         @click="submit"
       >
-        {{ t("验证我的发现", "Check my discovery") }}<ArrowRight :size="16" />
+        {{
+          scene.type === 'recall'
+            ? t("提交自查", "Submit self-check")
+            : t("验证我的发现", "Check my discovery")
+        }}<ArrowRight :size="16" />
       </button>
     </div>
   </div>

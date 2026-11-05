@@ -29,6 +29,9 @@ class BaseScene(BaseModel):
     explanation: str = Field(min_length=1, max_length=4000)
     hint: str = Field(min_length=1, max_length=1000)
     quote: str = Field(max_length=2000)
+    phase: Literal['guided', 'practice', 'transfer'] | None = None
+    introduction: str = Field(default='', max_length=4000)
+    worked_example: str = Field(default='', max_length=4000)
 
 
 class Point(BaseModel):
@@ -102,21 +105,58 @@ class SortScene(BaseScene):
         return self
 
 
-Scene = Annotated[Experiment | Decision | SortScene, Field(discriminator='type')]
+class RecallScene(BaseScene):
+    type: Literal['recall']
+    question: str = Field(min_length=1, max_length=2000)
+    reference_answer: str = Field(min_length=1, max_length=4000)
+    checkpoints: list[str] = Field(min_length=2, max_length=5)
+
+
+Scene = Annotated[Experiment | Decision | SortScene | RecallScene, Field(discriminator='type')]
 
 
 class Course(BaseModel):
     title: str = Field(min_length=1, max_length=160)
     summary: str = Field(min_length=1, max_length=2000)
     subject: str = Field(min_length=1, max_length=80)
+    learning_goals: list[str] = Field(default_factory=list, max_length=4)
     scenes: list[Scene] = Field(min_length=2, max_length=6)
 
     @model_validator(mode='after')
     def valid_scenes(self):
         if len({s.id for s in self.scenes}) != len(self.scenes):
             raise ValueError('Scene IDs must be unique')
-        if len({s.type for s in self.scenes}) < 2:
-            raise ValueError('Use at least two interaction types')
+        return self
+
+
+class GeneratedCourse(Course):
+    learning_goals: list[str] = Field(min_length=2, max_length=4)
+    scenes: list[Scene] = Field(min_length=3, max_length=6)
+
+    @model_validator(mode='after')
+    def valid_learning_design(self):
+        phases = [s.phase for s in self.scenes]
+        rank = {'guided': 0, 'practice': 1, 'transfer': 2}
+        if (set(phases) != set(rank)
+                or [rank.get(p, -1) for p in phases] != sorted(rank.get(p, -1) for p in phases)):
+            raise ValueError('Use guided, practice and transfer phases in order')
+        if any(not s.introduction.strip() or not s.worked_example.strip()
+               for s in self.scenes if s.phase == 'guided'):
+            raise ValueError('Guided activities need an introduction and worked example')
+        if self.scenes[-1].type != 'recall':
+            raise ValueError('End with a recall activity for independent transfer')
+        for scene in self.scenes:
+            if scene.type == 'decision' and sum(o.correct for o in scene.options) != 1:
+                raise ValueError('Decision needs exactly one correct answer')
+            if scene.type == 'recall' and any(not c.strip() for c in scene.checkpoints):
+                raise ValueError('Recall checkpoints must not be blank')
+            if scene.type == 'experiment':
+                from math import floor
+                last = scene.min + floor((scene.max - scene.min) / scene.step + 1e-8) * scene.step
+                if scene.target_min <= scene.min and scene.target_max >= last:
+                    raise ValueError('Experiment must include a reachable incorrect answer')
+                if len({p.y for p in scene.points}) < 2:
+                    raise ValueError('Experiment must show a changing result')
         return self
 
 
